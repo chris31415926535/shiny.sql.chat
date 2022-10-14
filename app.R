@@ -26,7 +26,7 @@ ui <- fluidPage(
   # Application title
   titlePanel("Simple SQL-Powered Chat in R Shiny!"),
 
-  # Sidebar with a slider input for number of bins
+  # Sidebar with user input and chat controls
   sidebarLayout(
     sidebarPanel(width = 3,
       textInput("msg_username",
@@ -41,7 +41,7 @@ ui <- fluidPage(
                    "Clear Chat Log"),
     ),
 
-    # Show a plot of the generated distribution
+    # main chat panel
     mainPanel(
       column(width = 6, uiOutput("messages_fancy"))
     )
@@ -109,14 +109,14 @@ server <- function(input, output) {
   })
 
   observeEvent(input$msg_clearchat, {
-    message("clearing chat log.")
+    if (debug) message("clearing chat log.")
     dplyr::copy_to(con, message_db_schema, name = "messages", overwrite = TRUE,  temporary = FALSE )
     messages_db <- reactiveValues(messages = read_messages(con))
 
   })
 
   observeEvent(input$msg_button, {
-    message(input$msg_text)
+    if (debug) message(input$msg_text)
 
     msg_time <- Sys.time( ) %>%
       as.character()
@@ -134,28 +134,17 @@ server <- function(input, output) {
                            value = "")
   })
 
-
-
-  output$messages_table <- shiny::renderTable(messages_db$messages)
-
-  output$messages_list <- shiny::renderUI({
-    render_msg_divs(messages_db$messages)
-  })
-
   output$messages_fancy <- shiny::renderUI({
     render_msg_fancy(messages_db$messages, input$msg_username)
   })
 
 }
 
-
 # A separate function in case you want to do any data preparation (e.g. time zone stuff)
 read_messages <- function(con){
   dplyr::tbl(con, "messages") %>%
     collect()
 }
-
-
 
 
 # Run the application
