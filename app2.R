@@ -11,6 +11,7 @@ library(shiny)
 library(dplyr)
 library(DBI)
 library(RSQLite)
+library(bs4Dash)
 
 # boolean to control console messages
 debug <- FALSE
@@ -20,32 +21,33 @@ ui <- fluidPage(
 
   tags$head(
     tags$script(src = "script.js"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "chat_styling.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "styling.css")
   ),
 
   # Application title
   titlePanel("Simple SQL-Powered Chat in R Shiny!"),
 
   # Sidebar with user input and chat controls
-  sidebarLayout(
-    sidebarPanel(width = 3,
-                 textInput("msg_username",
-                           "User Name:",
-                           value = "Chat Enthusiast"),
-                 textInput("msg_text",
-                           "Message Text:"),
-                 actionButton("msg_button",
-                              "Send Message"),
-                 hr(),
-                 actionButton("msg_clearchat",
-                              "Clear Chat Log"),
-    ),
-
-    # main chat panel
-    mainPanel(
-      column(width = 6, uiOutput("messages_fancy"))
-    )
+  bs4Dash::box(title = "Fancy Chat",height = 400,
+               style = "max-width:400px;",
+               id = "chatbox-container",
+               collapsible = FALSE,
+               uiOutput("messages_fancy"),
+               # shiny::fluidRow(
+               #   shiny::column(width = 10,textInput("msg_text", "Message Text:")),
+               #   shiny::column(width = 2, ))
+               # ),
+               tags$div(textInput("msg_text", label = NULL),
+                        actionButton("msg_button", "Send", height="30px"),
+                        style="display:flex"),
+               hr(),
+               textInput("msg_username", "User Name:", value = "Chat Enthusiast"),
+               actionButton("msg_clearchat", "Clear Chat Log")
   )
+
+  # main chat panel
+
+
 )
 
 
@@ -70,7 +72,8 @@ render_msg_divs_list <- function(messages) {
 }
 
 render_msg_fancy <- function(messages, self_username) {
-  div(class = "ui chat-container",
+  div(id = "chat-container",
+      class = "chat-container",
       messages %>%
         purrrlyr::by_row(~ div(class =  dplyr::if_else(
           .$username == self_username,

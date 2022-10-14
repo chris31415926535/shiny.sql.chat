@@ -1,11 +1,12 @@
-
+#chatbox-container {
+  max-width:400px;
+}
 
 .chat-container {
   display: flex;
   flex-flow: column nowrap;
   height: 400px;
   overflow-y: scroll;
-  background: green;
 }
 
 .chat-container .chat-message-left {
