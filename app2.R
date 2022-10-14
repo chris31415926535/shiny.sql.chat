@@ -27,16 +27,12 @@ ui <- fluidPage(
   # Application title
   titlePanel("Simple SQL-Powered Chat in R Shiny!"),
 
-  # Sidebar with user input and chat controls
+  # Box containing chat widgets
   bs4Dash::box(title = "Fancy Chat",height = 400,
                style = "max-width:400px;",
                id = "chatbox-container",
                collapsible = FALSE,
                uiOutput("messages_fancy"),
-               # shiny::fluidRow(
-               #   shiny::column(width = 10,textInput("msg_text", "Message Text:")),
-               #   shiny::column(width = 2, ))
-               # ),
                tags$div(textInput("msg_text", label = NULL),
                         actionButton("msg_button", "Send", height="30px"),
                         style="display:flex"),
@@ -44,9 +40,6 @@ ui <- fluidPage(
                textInput("msg_username", "User Name:", value = "Chat Enthusiast"),
                actionButton("msg_clearchat", "Clear Chat Log")
   )
-
-  # main chat panel
-
 
 )
 
@@ -60,17 +53,6 @@ read_messages <- function(con){
 
 # inspired by:
 # https://www.r-bloggers.com/2017/07/shiny-chat-in-few-lines-of-code-2/
-render_msg_divs_list <- function(messages) {
-  div(class = "ui very relaxed list",
-      messages %>%
-        #arrange(time) %>%
-        purrrlyr::by_row(~ div(class = "item",
-                               a(class = "header", .$username),
-                               div(class = "description", .$message)
-        )) %>% {.$.out}
-  )
-}
-
 render_msg_fancy <- function(messages, self_username) {
   div(id = "chat-container",
       class = "chat-container",
@@ -102,15 +84,17 @@ server <- function(input, output) {
 
   con <- DBI::dbConnect(RSQLite::SQLite(), "data/messages.sqlite")
 
+  # if there is no message table, create one using our schema
   if (!"messages" %in% DBI::dbListTables(con)){
     dplyr::copy_to(con, message_db_schema, name = "messages", overwrite = TRUE,  temporary = FALSE )
   }
 
+  # set up our messages data locally
   messages_db <- reactiveValues(messages = read_messages(con))
 
+  # look for new messages every n milliseconds
   db_check_timer <- shiny::reactiveTimer(intervalMs = 1000)
 
-  # check the table for updates each second
   observe({
     db_check_timer()
     if (debug) message("checking table...")
@@ -118,6 +102,7 @@ server <- function(input, output) {
 
   })
 
+  # button handler for chat clearing
   observeEvent(input$msg_clearchat, {
     if (debug) message("clearing chat log.")
     dplyr::copy_to(con, message_db_schema, name = "messages", overwrite = TRUE,  temporary = FALSE )
@@ -125,6 +110,7 @@ server <- function(input, output) {
 
   })
 
+  # button handler for sending a message
   observeEvent(input$msg_button, {
     if (debug) message(input$msg_text)
 
@@ -148,6 +134,7 @@ server <- function(input, output) {
     }
   })
 
+  # render the chat data using a custom function
   output$messages_fancy <- shiny::renderUI({
     render_msg_fancy(messages_db$messages, input$msg_username)
   })
