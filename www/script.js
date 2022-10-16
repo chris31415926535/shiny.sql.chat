@@ -10,8 +10,8 @@ jQuery(document).ready(function(){
   });
 })
 
-// this autoscroll doesn't work though
-// Scrolling down
+
+// Scrolling down when new messages are received
 var oldContent = null;
 window.setInterval(function() {
   var elem = document.getElementById('chat-container');

@@ -11,39 +11,9 @@ library(shiny)
 library(dplyr)
 library(DBI)
 library(RSQLite)
-library(bs4Dash)
 
 # boolean to control console messages
 debug <- FALSE
-
-# Define UI for basic chat application
-ui <- fluidPage(
-
-  tags$head(
-    tags$script(src = "script.js"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "styling.css")
-  ),
-
-  # Application title
-  titlePanel("Simple SQL-Powered Chat in R Shiny!"),
-
-  # Box containing chat widgets
-  bs4Dash::box(title = "Fancy Chat",height = 400,
-               style = "max-width:400px;",
-               id = "chatbox-container",
-               collapsible = FALSE,
-               uiOutput("messages_fancy"),
-               tags$div(textInput("msg_text", label = NULL),
-                        actionButton("msg_button", "Send", height="30px"),
-                        style="display:flex"),
-               hr(),
-               textInput("msg_username", "User Name:", value = "Chat Enthusiast"),
-               actionButton("msg_clearchat", "Clear Chat Log")
-  )
-
-)
-
-
 
 # A separate function in case you want to do any data preparation (e.g. time zone stuff)
 read_messages <- function(con){
@@ -51,6 +21,7 @@ read_messages <- function(con){
     collect()
 }
 
+# function to render SQL chat messages into HTML that we can style with CSS
 # inspired by:
 # https://www.r-bloggers.com/2017/07/shiny-chat-in-few-lines-of-code-2/
 render_msg_fancy <- function(messages, self_username) {
@@ -68,6 +39,32 @@ render_msg_fancy <- function(messages, self_username) {
   )
 }
 
+# Define UI for basic chat application
+ui <- fluidPage(
+  id = "chatbox-container",
+
+  tags$head(
+    tags$script(src = "script.js"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "styling.css")
+  ),
+
+  # Application title
+  titlePanel("Simple SQL-Powered Chat in R Shiny!"),
+
+  uiOutput("messages_fancy"),
+
+  tags$div(textInput("msg_text", label = NULL),
+           actionButton("msg_button", "Send", height="30px"),
+           style="display:flex"),
+
+  hr(),
+
+  textInput("msg_username", "User Name:", value = "Chat Enthusiast"),
+  actionButton("msg_clearchat", "Clear Chat Log")
+)
+
+
+# Server logic for basi cchat
 server <- function(input, output) {
 
   # update username to use random numbers
