@@ -15,6 +15,23 @@ library(RSQLite)
 # boolean to control console messages
 debug <- FALSE
 
+# function to connect to a SQLite database, creating a data directory and
+# SQLite file if necessary. This could be updated to use a different storage
+# mechanism.
+db_connect <- function() {
+  # make sure we have a data directory
+  if (!dir.exists("data")) dir.create("data")
+
+  # connect to SQLite database, or create one
+  con <- DBI::dbConnect(RSQLite::SQLite(), "data/messages.sqlite")
+
+  return(con)
+}
+
+db_clear <- function(con, message_db_schema){
+  dplyr::copy_to(con, message_db_schema, name = "messages", overwrite = TRUE,  temporary = FALSE )
+}
+
 # A separate function in case you want to do any data preparation (e.g. time zone stuff)
 read_messages <- function(con){
   dplyr::tbl(con, "messages") %>%
@@ -79,7 +96,7 @@ server <- function(input, output) {
                                      datetime = character(0),   # we're taking the easy way here
                                      message = character(0))
 
-  con <- DBI::dbConnect(RSQLite::SQLite(), "data/messages.sqlite")
+  con <- db_connect()
 
   # if there is no message table, create one using our schema
   if (!"messages" %in% DBI::dbListTables(con)){
@@ -102,7 +119,9 @@ server <- function(input, output) {
   # button handler for chat clearing
   observeEvent(input$msg_clearchat, {
     if (debug) message("clearing chat log.")
-    dplyr::copy_to(con, message_db_schema, name = "messages", overwrite = TRUE,  temporary = FALSE )
+
+    db_clear(con, message_db_schema)
+
     messages_db <- reactiveValues(messages = read_messages(con))
 
   })
