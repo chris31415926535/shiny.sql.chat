@@ -39,7 +39,7 @@ read_messages <- function(con){
 server <- function(input, output) {
 
   # assign username with random numbers
-  msg_username <- paste0("Chat Enthusiast", round(runif(n=1, min=1000000,max = 10000000)))
+  msg_username <- paste0("ChatEnthusiast", round(runif(n=1, min=10^6,max = 10^7)))
 
 
   # Set up message schema
@@ -66,7 +66,6 @@ server <- function(input, output) {
   observe({
     db_check_timer()
     messages_db$messages <- read_messages(con)
-
   })
 
   # Button handler for clearing the chat
