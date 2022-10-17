@@ -18,7 +18,7 @@ debug <- FALSE
 # function to connect to a SQLite database, creating a data directory and
 # SQLite file if necessary. This could be updated to use a different storage
 # mechanism.
-db_connect <- function() {
+db_connect <- function(message_db_schema) {
   # make sure we have a data directory
   if (!dir.exists("data")) dir.create("data")
 
@@ -27,7 +27,7 @@ db_connect <- function() {
 
   # if there is no message table, create one using our schema
   if (!"messages" %in% DBI::dbListTables(con)){
-    dplyr::copy_to(con, message_db_schema, name = "messages", overwrite = TRUE,  temporary = FALSE )
+    db_clear(con, message_db_schema)
   }
 
   return(con)
@@ -41,6 +41,10 @@ db_clear <- function(con, message_db_schema){
 read_messages <- function(con){
   dplyr::tbl(con, "messages") %>%
     collect()
+}
+
+send_message <- function(con, new_message) {
+  RSQLite::dbAppendTable(con, "messages", new_message)
 }
 
 # function to render SQL chat messages into HTML that we can style with CSS
@@ -101,7 +105,7 @@ server <- function(input, output) {
                                      datetime = character(0),   # we're taking the easy way here
                                      message = character(0))
 
-  con <- db_connect()
+  con <- db_connect(message_db_schema)
 
   # set up our messages data locally
   messages_db <- reactiveValues(messages = read_messages(con))
@@ -140,7 +144,7 @@ server <- function(input, output) {
                                    message = input$msg_text,
                                    datetime = msg_time)
 
-      RSQLite::dbAppendTable(con, "messages", new_message)
+      send_message(con, new_message)
 
       messages_db$messages <- read_messages(con)
 
