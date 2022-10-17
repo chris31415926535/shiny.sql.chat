@@ -40,11 +40,16 @@
   padding-bottom: 5px;
   margin-bottom: 1.3vh;
   background:#E1F6FF;
-    background:#B9EBFF;
+  background:#B9EBFF;
 }
 
 .chat-container .chat-message-left .username {
   font-weight:bolder;
+}
+
+.chat-container .chat-message-right {
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .chat-container  .datetime {
@@ -53,41 +58,4 @@
   text-align:right;
 }
 
-.chat-container .chat-message-right {
-  margin-left: auto;
-  margin-right: 0;
-}
-
-
 .container-fluid {  max-width: 400px; padding:25px; margin-left: auto; margin-right: auto; }
-
-                           .well { background-color: #F0F8FF;}
-
-                           * { font-family: "Montserrat"; }
-
-                           .nav>li>a { padding: 10px 7px; }
-
-                           h1 {display: inline;}
-                           h2 {display: inline;}
-
-                           /* .div {display: inline-block;}*/
-                           #subtitle {display: inline-block;}
-
-                           div#main_time_plot.col-sm-8: {padding-left: 0px;}
-
-                           .flagbar{
-                             width: 25px;
-                             height: 3px;
-                            }
-
-                            .blue {
-                             background-color: #5bcffb;
-                            }
-
-                            .pink {
-                             background-color: #f5abb9;
-                            }
-
-                            .white {
-                             background-color: #fff;
-                            }

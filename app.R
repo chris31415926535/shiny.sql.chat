@@ -9,6 +9,7 @@
 
 library(shiny)
 library(dplyr)
+library(dbplyr)
 library(DBI)
 library(RSQLite)
 
@@ -85,7 +86,7 @@ ui <- fluidPage(
 
   hr(),
 
-  textInput("msg_username", "User Name:", value = "Chat Enthusiast"),
+  textInput("msg_username", "User Name:", value = "ChatEnthusiast"),
   actionButton("msg_clearchat", "Clear Chat Log")
 )
 
@@ -95,7 +96,7 @@ server <- function(input, output) {
 
   # update username to use random numbers
   shiny::updateTextInput(inputId = "msg_username",
-                         value = paste0("Chat Enthusiast", round(runif(n=1, min=1000000,max = 10000000))))
+                         value = paste0("ChatEnthusiast", round(runif(n=1, min=1000000,max = 10000000))))
 
   # convert time to numeric with 2 decimal degrees precision, need to divide by 100 again later
   # Sys.time( ) %>% format("%s%OS2") %>% as.numeric() %>% `/`(100) %>% as.POSIXct(origin = "1970-01-01") %>% format("%s%OS2") %>% as.numeric()

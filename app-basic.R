@@ -9,6 +9,7 @@
 
 library(shiny)
 library(dplyr)
+library(dbplyr)
 library(DBI)
 library(RSQLite)
 

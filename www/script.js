@@ -5,7 +5,6 @@ jQuery(document).ready(function(){
     if (evt.keyCode == 13){
       // Enter, simulate clicking send
       jQuery('#msg_button').click();
-      console.log('enter pressed')
     }
   });
 })

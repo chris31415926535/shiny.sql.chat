@@ -13,9 +13,11 @@ knitr::opts_chunk$set(
 
 # A simple chat application using R Shiny
 
-This demo shows how to build a basic chat application in R using Shiny and SQLite. It was inspired by [this post](https://www.r-bloggers.com/2017/07/shiny-chat-in-few-lines-of-code-2/), but uses supported R packages and runs locally.
+This demo shows how to build a basic chat application in R using Shiny and SQLite. It's a bit of a silly project but the underlying logic can also be used for serious business applications, and we'll use databases, html, CSS, a bit of Javascript, and a lot of R.
 
-To try it out, clone this repo, load app.R in RStudio, and click "Run App."
+You can try out [**a completely unmoderated (!! please be respectful !!) version here**](https://chris31415926535.shinyapps.io/shiny-sql-chat/), which will remain up for an indeterminate amount of time. 
+
+To try out the finished product yourself, [grab the code from GitHub](https://github.com/chris31415926535/shiny.sql.chat), load app.R in RStudio, and click "Run App."
 
 The basic logic is:
 
@@ -24,6 +26,8 @@ The basic logic is:
 * Once per second, the app checks the database to see if there are new messages, and if it finds any it downloads them.
 * Messages are formatted using CSS based on whether the current username matches the message sender's name.
 * A bit of extra JavaScript adds polish by auto-scrolling down when a new message is received.
+
+This post was inspired by [this older post](https://www.r-bloggers.com/2017/07/shiny-chat-in-few-lines-of-code-2/), but extends it quite a bit and brings it up to date. 
 
 # Step 1: Set up the database
 
@@ -111,7 +115,7 @@ ui <- fluidPage(
 ```
 
 Next, we define our server logic. 
-To keep it simple we'll assign users random names à la [Firstname Bunchofnumbers](https://knowyourmeme.com/memes/firstname-bunchofnumbers)^[`msg_username <- paste0("Chat Enthusiast", round(runif(n=1, min=10^6,max = 10^7)))`], and assume we'll set up a connection `con` to our database as described above.
+To keep it simple we'll assign users random names à la [Firstname Bunchofnumbers](https://knowyourmeme.com/memes/firstname-bunchofnumbers)^[`msg_username <- paste0("ChatEnthusiast", round(runif(n=1, min=10^6,max = 10^7)))`], and assume we'll set up a connection `con` to our database as described above.
 
 Then we need:
 
@@ -197,8 +201,127 @@ If we put this all together, we get a functional chat app!
 
 It may not be pretty, but it *works!* If you run the app and load it in two different browser tabs, you'll see messages from one appear in the other a second later.
 
+[See the full code here!](https://github.com/chris31415926535/shiny.sql.chat/blob/main/app-basic.R)
+
 # Step 3: Polish it with CSS and Javascript
+
+Now that we have our basic app, let's make it fancy by reorganizing our UI, styling it with CSS, and adding some Javascript. I'm just going to hit the highlights here, but you can see the whole app [here on GitHub](https://github.com/chris31415926535/shiny.sql.chat/blob/main/app.R).
+
+## Reorganizing the UI
+
+Instead of using a `sidebarLayout()`, let's put the chat messages in a window over the input controls like a normal chat app. Also, instead of printing our chat messages as a boring table, let's output it as html that we can then style with CSS.
+
+The actual layout code for our UI looks very similar, except it now has no `sidebayLayout()` wrapper, a new line `id = "chatbox-container"`, and some stuff about `style="display:flex"`.
+
+```{r, eval = FALSE}
+ui <- fluidPage(
+  id = "chatbox-container",
+
+  # Application title
+  titlePanel("Simple SQL-Powered Chat in R Shiny!"),
+
+  uiOutput("messages_fancy"),
+
+  tags$div(textInput("msg_text", label = NULL),
+           actionButton("msg_button", "Send", height="30px"),
+           style="display:flex"),
+  hr(),
+  textInput("msg_username", "User Name:", value = "Chat Enthusiast"),
+  actionButton("msg_clearchat", "Clear Chat Log")
+)
+```
+
+But *also* notice that now we're using `uiOutput()` instead of `tableOutput()`. `uiOutput()` lets us render HTML in our server and have it display and update dynamically.
+
+This dynamic rendering happens in the function `render_msg_fancy()`, inspired by [this blog post](https://www.r-bloggers.com/2017/07/shiny-chat-in-few-lines-of-code-2/):
+
+```{r eval=FALSE}
+render_msg_fancy <- function(messages, self_username) {
+  div(id = "chat-container",
+      class = "chat-container",
+      messages %>%
+        purrrlyr::by_row(~ div(class =  dplyr::if_else(
+          .$username == self_username,
+          "chat-message-left", "chat-message-right"),
+          a(class = "username", .$username),
+          div(class = "message", .$message),
+          div(class = "datetime", .$datetime)
+        ))
+      %>% {.$.out}
+  )
+}
+```
+
+`render_msg_fancy()` takes each row of our message table and transforms it into html divs with specific classes and ids that we can then style with css. Note there's a `dplyr::if_else()` in there that checks to see if the current username is the same as the message sender's username, and assigns the message a class `chat-message-left` or `chat-message-right` accordingly.
+
+To make it concrete, here's what `render_msg_fancy()` outputs for a one-row chat log:
+
+```{hmtl}
+<div id="chat-container" class="chat-container">
+  <div class="chat-message-right">
+    <a class="username">Chat Enthusiast5917836</a>
+    <div class="message">I sure do love to chat!</div>
+    <div class="datetime">2022-10-17 10:19:24</div>
+  </div>
+</div>
+```
+
+
+## Styling with CSS
+
+We'll use custom CSS to format messages nicely, and *differently* depending on whether they were sent by the current user or another user. CSS is tricky (for me) and beyond the scope of Shiny *per se*, but the key here is that we gave our message html divs either the class `chat-message-left` or `chat-message-right` based on who sent them. Then we can use CSS to make them distinct:
+
+```{css}
+.chat-container .chat-message-left {
+  // format messages from the current user one way
+}
+
+.chat-container .chat-message-right {
+  // format messages from other users differently
+}
+```
+
+I then put the CSS into a separate file in the folder `www` and added this code up top in my UI to include it:
+
+```{r eval=FALSE}
+  tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "styling.css"))
+```
+
+[Take a look at the full CSS file here](https://github.com/chris31415926535/shiny.sql.chat/blob/main/www/styling.css).
+
+## Adding some Javascript
+
+Finally, we'll add two little Javascript functions to let users send a message by pressing enter, and to auto-scroll to the bottom when a new message is received. [I nicked both of these from Appsilon](https://github.com/Appsilon/shiny.collections/blob/master/inst/examples/www/script.js).
+
+For the enter-send, we use a small jQuery function that monitors our text input for the key "enter," and upon detection simulates a click on our message button. In both cases we use html ids `#msg_text` and `#msg_buttons` that correspond to our objects' internal `inputId`s in our server code.
+
+```{javascript, eval = FALSE}
+jQuery(document).ready(function(){
+  jQuery('#msg_text').keypress(function(evt){
+    if (evt.keyCode == 13){
+      // Enter, simulate clicking send
+      jQuery('#msg_button').click();
+    }
+  });
+})
+```
+
+Finally, with our last Javascript code we monitor the element `chat-container` for new elements, and scroll to the bottom if we detect one.
+
+# The result!
+
+Putting it all together, we now have a fancy chat application 
+
+![A fancy chat application written in R with Shiny!](docs/app-fancy.png){width=250}
+
+You can try out [**a completely unmoderated (!! please be respectful !!) version here**](https://chris31415926535.shinyapps.io/shiny-sql-chat/), which will remain up for an indeterminate amount of time. 
 
 # Step 4: Next steps?
 
-* We download the *entire* set of messages each time we poll the database. If the chatlogs get big, a better approach might be to only get new messages.
+A chat app is fun, but at the core we've built an engine for *centralized multi-user message exchanges*, and the same logic could be applied to cases with real-world value. For example:
+
+* Enabling real-time communication and collaboration between concurrent users in a Shiny analytics app;
+* Enabling users to complete and submit applications, which could be reviewed and processed by users with administrative privileges, and sending the results back to applicants; or,
+* Enabling multi-user discrete-time simulations where commands are sent to a central server for processing, and results are sent back to users.
+
+As always, reach out if you have any questions or if you'd like to talk about how R and Shiny can help you achieve your goals.
